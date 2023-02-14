@@ -37,7 +37,6 @@ class Logger:
         self.format='%(asctime)s.%(msecs)03d - %(name)s - %(levelname)s - %(message)s'
         self.formatter=logging.Formatter(self.format,datefmt='%Y-%m-%d %H:%M:%S')
         self.logger=logging.getLogger(self.name)
-        self.logger.setLevel(self.level)
 
     def _map_level(self):
         levels={
@@ -53,9 +52,17 @@ class Logger:
     @classmethod
     def Logger(cls,name,addHandlers,level="info"):
         logger=cls(name,level)
-        if bool(addHandlers):
-            logger.add_stream_handler()
-            logger.add_file_handler()
+        if isinstance(addHandlers,(list,tuple)):
+            if bool(addHandlers[0]):
+                if not any([isinstance(handler,logging.StreamHandler) for handler in logger.logger.handlers]):
+                    logger.add_stream_handler()
+            if bool(addHandlers[-1]):
+                if not any([isinstance(handler,logging.FileHandler) for handler in logger.logger.handlers]):
+                        logger.add_file_handler()
+        else:
+            if not any([handler for handler in logger.logger.handlers if isinstance(handler,logging.FileHandler) or isinstance(handler,logging.StreamHandler)]):
+                logger.add_stream_handler()
+                logger.add_file_handler()
         return logger.logger
 
     def add_stream_handler(self):
@@ -73,3 +80,5 @@ class Logger:
         fh.setFormatter(self.formatter)
         self.logger.addHandler(fh)
 
+    def shutdown(self):
+        self.logger.shutdown()
